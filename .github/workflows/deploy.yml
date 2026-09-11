@@ -52,18 +52,13 @@ jobs:
         run: |
           echo "🔍 Checking Deployment Secrets..."
           
-          # Diagnostic validation with clear error messages
           if [ -z "$VPS_HOST" ]; then
             echo "❌ CRITICAL ERROR: VPS_HOST is empty!"
-            echo "👉 Please go to: https://github.com/Sports-Dev-07/chat-system/settings/secrets/actions"
-            echo "👉 Add a Secret named: VPS_HOST with your Hostinger VPS IP."
             exit 1
           fi
 
           if [ -z "$VPS_KEY" ]; then
             echo "❌ CRITICAL ERROR: VPS_SSH_KEY is empty!"
-            echo "👉 Please go to: https://github.com/Sports-Dev-07/chat-system/settings/secrets/actions"
-            echo "👉 Add a Secret named: VPS_SSH_KEY with your private SSH key."
             exit 1
           fi
 
@@ -71,16 +66,19 @@ jobs:
           echo "✅ Target User: $VPS_USER"
           echo "✅ Target Port: $VPS_PORT"
 
-          # Setup local SSH directory & key on GitHub Actions runner
+          # Setup local SSH directory
           mkdir -p ~/.ssh
-          echo "$VPS_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 700 ~/.ssh
+
+          # Reliably write private key with preserved newlines & trailing newline
+          printf "%s\n" "$VPS_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          # Add VPS to known hosts to prevent interactive authenticity prompts
+          # Add VPS to known hosts
           ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
           echo "🚀 Connecting to VPS via SSH..."
-          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o StrictHostKeyChecking=accept-new "$VPS_USER@$VPS_HOST" << 'EOF'
+          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o BatchMode=yes -o StrictHostKeyChecking=accept-new "$VPS_USER@$VPS_HOST" 'bash -s' << 'EOF'
             set -e
             echo "📦 Logged into VPS successfully as $(whoami)!"
 
@@ -114,7 +112,7 @@ jobs:
             fi
 
             # Deploy containers with Docker Compose
-            echo "🐳 Rebuilding and restarting Docker containers..."
+            echo "🐳 Rebuilding and starting Docker containers..."
             docker compose down --remove-orphans || true
             docker compose build --pull
             docker compose up -d
@@ -123,4 +121,4 @@ jobs:
             sleep 3
             docker compose ps
             echo "🎉 Deployment successful!"
-          EOF
+EOF
