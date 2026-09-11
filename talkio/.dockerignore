@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.git/
+.github/
+.env
+*.db-journal
+*.db-wal
+*.db-shm
+backups/
+uploads/
+node_modules/
+dist/
+build/

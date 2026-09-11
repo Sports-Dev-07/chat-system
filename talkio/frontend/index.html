@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Talkio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<script>document.documentElement.dataset.theme = localStorage.getItem("talkio_theme") || "light";</script>
+
+<!-- ============ LOGIN ============ -->
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="brand"><span class="brand-icon">💬</span><h1>Talkio</h1></div>
+    <p class="login-sub">Chat, groups, channels, calls — with an AI assistant on your team.</p>
+    <div id="google-btn"></div>
+    <div id="dev-login" class="dev-login hidden">
+      <div class="divider"><span>local testing</span></div>
+      <input id="dev-email" type="email" placeholder="you@example.com">
+      <input id="dev-name" type="text" placeholder="Your name">
+      <button id="dev-login-btn" class="btn-primary">Sign in (Dev Mode)</button>
+    </div>
+    <p id="login-error" class="login-error"></p>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" class="app hidden">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="brand small"><span class="brand-icon">💬</span><h1>Talkio</h1></div>
+      <div class="sidebar-actions">
+        <button id="global-search-btn" class="icon-btn" title="Search everything">🔎</button>
+        <button id="agents-btn" class="icon-btn" title="My AI Agents">🤖</button>
+        <button id="new-chat-btn" class="icon-btn coral" title="New chat / group / channel">+</button>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="text" placeholder="Search conversations...">
+    </div>
+    <div id="conv-list" class="conv-list"></div>
+    <div id="ws-status" class="ws-status hidden">⟳ Reconnecting…</div>
+    <div class="sidebar-me">
+      <img id="me-avatar" class="avatar sm" alt="">
+      <div class="me-info" id="me-open" title="Edit profile" style="cursor:pointer"><b id="me-name"></b><span id="me-email"></span></div>
+      <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+    </div>
+  </aside>
+
+  <!-- Chat pane -->
+  <main class="chat-pane">
+    <div id="chat-empty" class="chat-empty">
+      <span>💬</span>
+      <p>Select a conversation or start a new one</p>
+    </div>
+    <div id="chat-view" class="hidden chat-view">
+      <header class="chat-header">
+        <div class="chat-header-left">
+          <button id="back-btn" class="icon-btn back-btn" title="Back">←</button>
+          <div class="avatar-wrap"><img id="chat-avatar" class="avatar" alt=""><span id="chat-dot" class="dot hidden"></span></div>
+          <div>
+            <h2 id="chat-name"></h2>
+            <span id="chat-status" class="status"></span>
+          </div>
+        </div>
+        <div class="chat-header-right">
+          <button id="voice-call-btn" class="round-btn" title="Voice call">
+            <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+          </button>
+          <button id="video-call-btn" class="round-btn" title="Video call">
+            <svg viewBox="0 0 24 24"><path d="m22 8-6 4 6 4V8z"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+          </button>
+        </div>
+      </header>
+      <div id="messages" class="messages"></div>
+      <div id="typing" class="typing hidden"></div>
+      <div id="mention-pop" class="mention-pop hidden"></div>
+      <div id="reply-bar" class="reply-bar hidden">
+        <div class="reply-bar-body">↩ Replying to <b id="reply-to-name"></b>: <span id="reply-to-preview"></span></div>
+        <button id="reply-cancel" class="icon-btn">✕</button>
+      </div>
+      <footer class="composer">
+        <input id="file-input" type="file" class="hidden">
+        <button id="attach-btn" class="icon-btn" title="Attach a file or image">📎</button>
+        <button id="emoji-btn" class="icon-btn" title="Emoji">🙂</button>
+        <div id="emoji-pop" class="emoji-pop hidden"></div>
+        <input id="msg-input" type="text" placeholder="Type a message...">
+        <button id="send-btn" class="send-btn" title="Send">
+          <svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </footer>
+    </div>
+  </main>
+
+  <!-- Details panel -->
+  <aside id="details" class="details hidden">
+    <img id="detail-avatar" class="avatar xl" alt="">
+    <h2 id="detail-name"></h2>
+    <p id="detail-sub" class="detail-sub"></p>
+    <div id="detail-members" class="detail-members hidden">
+      <div class="panel-head"><h3>Group settings</h3></div>
+      <div id="member-list"></div>
+    </div>
+    <div class="panel-head"><h3>Shared Media</h3></div>
+    <div id="shared-media" class="shared-block"><p class="muted">No media shared yet</p></div>
+    <div class="panel-head"><h3>Shared Files</h3></div>
+    <div id="shared-files" class="shared-block"><p class="muted">No files shared yet</p></div>
+  </aside>
+</div>
+
+<!-- ============ NEW CONVERSATION MODAL ============ -->
+<div id="modal" class="modal hidden">
+  <div class="modal-card">
+    <h2>New conversation</h2>
+    <div class="tabs">
+      <button class="tab active" data-type="dm">Direct</button>
+      <button class="tab" data-type="group">Group</button>
+      <button class="tab" data-type="channel">Channel</button>
+    </div>
+    <input id="conv-name" class="hidden" type="text" placeholder="Group / channel name">
+    <div id="user-pick" class="user-pick"></div>
+    <div id="channel-browse" class="hidden channel-browse"></div>
+    <div class="modal-actions">
+      <button id="modal-cancel" class="btn-ghost">Cancel</button>
+      <button id="modal-create" class="btn-primary">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CALL MODAL ============ -->
+<div id="call-modal" class="call-modal hidden">
+  <div class="call-card">
+    <div id="call-status" class="call-status">Calling…</div>
+    <div class="videos">
+      <video id="remote-video" autoplay playsinline></video>
+      <video id="local-video" autoplay playsinline muted></video>
+      <div id="voice-only" class="voice-only hidden">
+        <img id="call-peer-avatar" class="avatar xl" alt="">
+        <h2 id="call-peer-name"></h2>
+      </div>
+    </div>
+    <div class="call-controls">
+      <button id="mute-btn" class="round-btn" title="Mute">🎙️</button>
+      <button id="cam-btn" class="round-btn" title="Camera">📷</button>
+      <button id="hangup-btn" class="round-btn danger" title="Hang up">
+        <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ INCOMING CALL TOAST ============ -->
+<div id="incoming" class="incoming hidden">
+  <img id="incoming-avatar" class="avatar" alt="">
+  <div class="incoming-info"><b id="incoming-name"></b><span id="incoming-kind"></span></div>
+  <button id="accept-btn" class="round-btn accept">✓</button>
+  <button id="decline-btn" class="round-btn danger">✕</button>
+</div>
+
+
+<!-- ============ PROFILE MODAL ============ -->
+<div id="profile-modal" class="modal hidden">
+  <div class="modal-card">
+    <h2>My profile</h2>
+    <div class="profile-row">
+      <img id="profile-avatar" class="avatar xl" alt="">
+      <div>
+        <button id="avatar-upload-btn" class="btn-ghost">📷 Change photo</button>
+        <input id="avatar-input" type="file" accept="image/*" class="hidden">
+      </div>
+    </div>
+    <label class="field-label">Display name</label>
+    <input id="profile-name" type="text" placeholder="Your name">
+    <label class="field-label">Title / role</label>
+    <input id="profile-title" type="text" placeholder="e.g. Product Designer · Seattle, WA">
+    <p class="muted-note">Signed in as <span id="profile-email"></span></p>
+    <div class="modal-actions">
+      <button id="profile-cancel" class="btn-ghost">Cancel</button>
+      <button id="profile-save" class="btn-primary">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ AGENTS MODAL ============ -->
+<div id="agents-modal" class="modal hidden">
+  <div class="modal-card wide">
+    <h2>🤖 AI Agents</h2>
+    <p class="muted-note">Create your own agents with your Claude API key. Add them to chats and groups —
+    anyone in the group can ask them. Use <b>@team</b> in a group with 2+ agents to make them split a task.</p>
+    <div id="agent-requests" class="agent-requests hidden"></div>
+    <div id="agent-list" class="agent-list"></div>
+    <div class="agent-form">
+      <h3 id="agent-form-title">Create a new agent</h3>
+      <input id="agent-name" type="text" placeholder="Agent name (e.g. Research Bot)">
+      <input id="agent-desc" type="text" placeholder="What is this agent good at?">
+      <div class="provider-toggle">
+        <button id="prov-claude" class="prov active" data-prov="claude">☁️ Claude API</button>
+        <button id="prov-ollama" class="prov" data-prov="ollama">🖥️ Ollama (local LLM)</button>
+      </div>
+      <div id="claude-fields">
+        <input id="agent-key" type="password" placeholder="Claude API key (sk-ant-...) — or 'test' for echo mode">
+        <select id="agent-model">
+          <option value="claude-sonnet-4-6">Claude Sonnet 4.6 (recommended)</option>
+          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 (fast/cheap)</option>
+          <option value="claude-opus-4-8">Claude Opus 4.8 (max quality)</option>
+        </select>
+      </div>
+      <div id="ollama-fields" class="hidden">
+        <div class="ollama-url-row">
+          <button id="ollama-detect" class="btn-primary sm" title="Find Ollama on this device">📡 Detect my Ollama</button>
+          <input id="agent-ollama-url" type="text" placeholder="…or enter URL manually (or 'test')">
+          <button id="ollama-check" class="btn-ghost sm" title="Check server & list models">🔍</button>
+        </div>
+        <div id="ollama-status" class="ollama-status hidden"></div>
+        <select id="agent-ollama-model" class="hidden"></select>
+        <input id="agent-ollama-model-manual" type="text" placeholder="Model name — e.g. llama3.2">
+        <p class="muted-note">Run Ollama on your PC with <code>OLLAMA_HOST=0.0.0.0 ollama serve</code> so this
+        server can reach it over the network. Each user can point their own agent at their own machine.</p>
+      </div>
+      <div class="modal-actions">
+        <button id="agent-form-cancel" class="btn-ghost hidden">Cancel edit</button>
+        <button id="agent-save" class="btn-primary">Create agent</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button id="agents-close" class="btn-ghost">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div id="settings-modal" class="modal hidden">
+  <div class="modal-card">
+    <h2>⚙️ Settings</h2>
+    <div class="settings-row"><span>🌗 Theme</span>
+      <button id="theme-toggle" class="btn-ghost sm">Switch to dark</button></div>
+    <div class="settings-row"><span>🔔 Desktop notifications</span>
+      <button id="notif-toggle" class="btn-ghost sm">Enable</button></div>
+    <div class="settings-row"><span>👤 Account</span><span id="settings-email" class="muted-note"></span></div>
+    <div class="settings-row"><span>🚪 Sign out (this device)</span>
+      <button id="settings-logout" class="btn-ghost sm">Sign out</button></div>
+    <div class="settings-row"><span>🛡 Sign out everywhere</span>
+      <button id="settings-logout-all" class="btn-ghost sm warn-text">All devices</button></div>
+    <p class="muted-note">"Sign out everywhere" invalidates every session token on every device, including
+    this one being re-issued a fresh token.</p>
+    <div class="modal-actions"><button id="settings-close" class="btn-ghost">Close</button></div>
+  </div>
+</div>
+
+<!-- ============ GLOBAL SEARCH MODAL ============ -->
+<div id="search-modal" class="modal hidden">
+  <div class="modal-card wide">
+    <h2>🔎 Search</h2>
+    <input id="global-search-input" type="text" placeholder="Search messages, people, agents…">
+    <div id="search-results" class="search-results"><p class="muted">Type at least 2 characters</p></div>
+    <div class="modal-actions"><button id="search-close" class="btn-ghost">Close</button></div>
+  </div>
+</div>
+
+<div id="toasts" class="toasts"></div>
+
+<script src="config.js"></script>
+<script src="js/calls.js"></script>
+<script src="js/app.js"></script>
+<script>
+// Resilience net: if a script error ever prevents boot, still surface a way to sign in.
+window.addEventListener("error", (e) => console.error("Talkio error:", e.message));
+setTimeout(() => {
+  const login = document.getElementById("login-screen");
+  const dev = document.getElementById("dev-login");
+  const gbtn = document.getElementById("google-btn");
+  if (login && !login.classList.contains("hidden") &&
+      dev?.classList.contains("hidden") && !gbtn?.childElementCount) {
+    fetch("/api/config").then((r) => r.json()).then((cfg) => {
+      if (cfg.dev_mode) dev.classList.remove("hidden");
+      const err = document.getElementById("login-error");
+      if (err && !cfg.dev_mode && !cfg.google_client_id)
+        err.textContent = "Server has no login method configured (set GOOGLE_CLIENT_ID or DEV_MODE=true).";
+    }).catch(() => {
+      const err = document.getElementById("login-error");
+      if (err) err.textContent = "Cannot reach the Talkio server — is uvicorn running?";
+    });
+  }
+}, 2500);
+</script>
+</body>
+</html>

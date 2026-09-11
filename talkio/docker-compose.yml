@@ -1,0 +1,29 @@
+services:
+  talkio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: talkio-agent-hub
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Persist SQLite database file, uploads, workspace files, and backups
+      - talkio_data:/app/backend/data
+      - ./backend/sportstech.db:/app/backend/sportstech.db
+      - ./backend/uploads:/app/backend/uploads
+      - ./backend/workspace:/app/backend/workspace
+      - ./backend/backups:/app/backend/backups
+    environment:
+      - TZ=UTC
+    networks:
+      - talkio_net
+
+volumes:
+  talkio_data:
+
+networks:
+  talkio_net:
+    driver: bridge

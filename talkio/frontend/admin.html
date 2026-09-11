@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Agent Hub — Administration</title>
+<style>
+  :root {
+    --bg: #0e0f11; --card: #17191c; --line: #24272b; --line-2: #34383e;
+    --ink: #e9eaec; --ink-2: #a9aeb5; --ink-3: #71767d;
+    --brand: #e07a3c; --ok: #35c07a; --warn: #e0a93c; --bad: #e0553c;
+    --r: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px; min-height: 100vh;
+    font: 15px/1.55 -apple-system, "Segoe UI", Roboto, system-ui, sans-serif;
+    color: var(--ink); background: var(--bg);
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  h1 { margin: 0; font-size: 1.35rem; letter-spacing: -0.01em; }
+  .tag {
+    padding: 2px 8px; border-radius: 999px; font-size: 0.66rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--brand); border: 1px solid var(--brand);
+  }
+  .sub { margin: 0 0 22px; color: var(--ink-3); font-size: 0.86rem; }
+  .card {
+    padding: 20px; margin-bottom: 18px;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  }
+  h2 { margin: 0 0 14px; font-size: 0.95rem; font-weight: 700; }
+  label { display: block; margin-bottom: 5px; font-size: 0.78rem; color: var(--ink-2); }
+  input[type=text], input[type=email], input[type=password] {
+    width: 100%; padding: 10px 12px; font: inherit; font-size: 0.9rem;
+    color: var(--ink); background: #101215;
+    border: 1px solid var(--line-2); border-radius: 8px; outline: none;
+  }
+  input:focus { border-color: var(--brand); }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .row > div { flex: 1 1 190px; }
+  button {
+    padding: 10px 15px; font: inherit; font-size: 0.86rem; font-weight: 600;
+    cursor: pointer; border-radius: 8px; border: 1px solid var(--line-2);
+    color: var(--ink); background: #1d2024;
+  }
+  button:hover { border-color: var(--ink-3); }
+  button.primary { color: #16181a; background: var(--brand); border-color: var(--brand); }
+  button.sm { padding: 6px 10px; font-size: 0.78rem; }
+  button.danger { color: var(--bad); border-color: var(--bad); }
+  button[disabled] { opacity: .55; cursor: default; }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    padding: 8px 6px; text-align: left; font-size: 0.7rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3);
+    border-bottom: 1px solid var(--line-2);
+  }
+  td { padding: 11px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  td small { display: block; color: var(--ink-3); font-size: 0.76rem; }
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--ink-3); border: 1px solid var(--line-2);
+  }
+  .pill.ok { color: var(--ok); border-color: var(--ok); }
+  .pill.warn { color: var(--warn); border-color: var(--warn); }
+  .pill.bad { color: var(--bad); border-color: var(--bad); }
+  .acts { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .msg { margin-top: 10px; font-size: 0.85rem; min-height: 1.2em; }
+  .msg.err { color: var(--bad); }
+  .msg.ok { color: var(--ok); }
+  .pwbox {
+    display: none; padding: 14px; margin-top: 12px;
+    background: rgba(224,122,60,.10); border: 1px solid var(--brand); border-radius: 8px;
+  }
+  .pwbox.show { display: block; }
+  .pwbox code {
+    display: inline-block; padding: 8px 12px; margin: 8px 0;
+    font-size: 1.05rem; letter-spacing: .04em; user-select: all;
+    background: #101215; border: 1px solid var(--line-2); border-radius: 6px;
+  }
+  .pwbox small { display: block; color: var(--ink-2); font-size: 0.78rem; }
+  .hidden { display: none !important; }
+  .stats { display: flex; gap: 10px; flex-wrap: wrap; }
+  .stat {
+    flex: 1 1 120px; padding: 12px 14px;
+    background: #101215; border: 1px solid var(--line); border-radius: 8px;
+  }
+  .stat b { display: block; font-size: 1.5rem; line-height: 1.2; }
+  .stat span {
+    font-size: 0.7rem; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--ink-3);
+  }
+  .note {
+    padding: 12px 14px; margin-top: 12px; font-size: 0.82rem; color: var(--ink-2);
+    background: #101215; border-left: 2px solid var(--brand); border-radius: 4px;
+  }
+  .foot { margin-top: 22px; color: var(--ink-3); font-size: 0.78rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Agent Hub</h1><span class="tag">Administration</span>
+  </header>
+  <p class="sub">Separate from the chat app. Nothing here is reachable from the
+    normal interface.</p>
+
+  <!-- Sign in. Its own form: an admin session here is not shared with the chat UI. -->
+  <div id="gate" class="card">
+    <h2>Administrator sign-in</h2>
+    <div class="row">
+      <div><label for="email">Email</label>
+        <input id="email" type="email" autocomplete="username"></div>
+      <div><label for="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password"></div>
+      <div style="flex:0 0 auto"><button id="signin" class="primary">Sign in</button></div>
+    </div>
+    <div id="gate-msg" class="msg"></div>
+  </div>
+
+  <div id="panel" class="hidden">
+
+    <div class="card">
+      <h2>Overview</h2>
+      <div id="stats" class="stats"></div>
+    </div>
+
+    <div class="card">
+      <h2>Add a person</h2>
+      <div class="row">
+        <div><label for="new-email">Email</label>
+          <input id="new-email" type="email" placeholder="colleague@sportstech.de"></div>
+        <div><label for="new-name">Name</label>
+          <input id="new-name" type="text" placeholder="Optional"></div>
+        <div style="flex:0 0 auto">
+          <label for="new-admin">Administrator</label>
+          <input id="new-admin" type="checkbox" style="width:auto">
+        </div>
+        <div style="flex:0 0 auto"><button id="add" class="primary">Create</button></div>
+      </div>
+      <div id="add-msg" class="msg"></div>
+      <div id="pwbox" class="pwbox"></div>
+    </div>
+
+    <div class="card">
+      <h2>People</h2>
+      <table>
+        <thead><tr>
+          <th>Person</th><th>Status</th><th>Role</th><th>Last seen</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div id="list-msg" class="msg"></div>
+      <p class="note"><b>Passwords cannot be viewed.</b> Only a one-way hash is
+        stored, so nobody — including an administrator — can read someone's
+        password. If a person is locked out, use <b>Reset password</b>: it issues
+        a new one-time password shown here once, which they must change at their
+        next sign-in.</p>
+    </div>
+
+    <!-- One person's activity, opened from the table. -->
+  <div id="activity" class="card hidden">
+    <h2 id="act-who">Activity</h2>
+    <div id="act-stats" class="stats"></div>
+    <table>
+      <thead><tr><th>When</th><th>What</th><th>Detail</th></tr></thead>
+      <tbody id="act-rows"></tbody>
+    </table>
+    <div id="act-msg" class="msg"></div>
+    <button id="act-close" class="sm" style="margin-top:12px">Close</button>
+  </div>
+
+  <div class="foot">
+      Signed in as <b id="whoami"></b> ·
+      <button id="signout" class="sm">Sign out</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Deliberately standalone: no shared code with the chat app, and the admin token
+// is kept under its own key so signing out here doesn't disturb a chat session
+// in another tab (and vice versa).
+const API = location.origin;
+const KEY = "sportstech_admin_token";
+const $ = (id) => document.getElementById(id);
+let token = sessionStorage.getItem(KEY) || "";
+
+function msg(id, text, cls = "") {
+  $(id).textContent = text || "";
+  $(id).className = "msg " + cls;
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.detail || `Request failed (${res.status})`);
+  return data;
+}
+
+function when(ts) {
+  if (!ts) return "never";
+  const d = new Date(ts * 1000);
+  const days = Math.floor((Date.now() - d) / 864e5);
+  if (days === 0) return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  if (days === 1) return "yesterday";
+  if (days < 30) return days + " days ago";
+  return d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" });
+}
+
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const STAT_LABELS = {
+  people: "People", can_sign_in: "Can sign in", signed_in_ever: "Have signed in",
+  online_now: "Online now", active_24h: "Active today", active_7d: "Active this week",
+  locked: "Locked out", admins: "Admins", agents: "Agents",
+  conversations: "Conversations", messages: "Messages",
+};
+
+async function loadOverview() {
+  let o;
+  try { o = await api("/api/admin/overview"); } catch (e) { return; }
+  $("stats").innerHTML = Object.entries(STAT_LABELS)
+    .filter(([k]) => k in o)
+    .map(([k, label]) => `<div class="stat"><b>${o[k]}</b><span>${label}</span></div>`)
+    .join("");
+}
+
+async function showActivity(uid, who) {
+  $("act-who").textContent = "Activity — " + who;
+  $("act-rows").innerHTML = "";
+  msg("act-msg", "Loading…");
+  $("activity").classList.remove("hidden");
+  $("activity").scrollIntoView({ block: "nearest" });
+  try {
+    const a = await api(`/api/admin/users/${uid}/activity`);
+    const s = a.stats || {};
+    $("act-stats").innerHTML = [
+      ["Messages", s.messages], ["Conversations", s.conversations],
+      ["Agents owned", s.agents_owned], ["Shared with them", s.agents_shared_with_them],
+      ["Scheduled tasks", s.schedules],
+    ].map(([l, v]) => `<div class="stat"><b>${v ?? 0}</b><span>${l}</span></div>`).join("");
+    const events = a.events || [];
+    $("act-rows").innerHTML = events.length
+      ? events.map((e) => `<tr>
+          <td><small>${esc(new Date(e.at * 1000).toLocaleString())}</small></td>
+          <td>${esc(e.action)}</td>
+          <td><small>${esc(e.detail || e.target || "")}</small></td></tr>`).join("")
+      : `<tr><td colspan="3"><small>Nothing recorded yet. Activity is logged from
+         sign-ins, deletions and agent actions.</small></td></tr>`;
+    msg("act-msg", "");
+  } catch (e) {
+    msg("act-msg", e.message, "err");
+  }
+}
+
+$("act-close").addEventListener("click", () => $("activity").classList.add("hidden"));
+
+async function load() {
+  await loadOverview();
+  let data;
+  try {
+    data = await api("/api/admin/users");
+  } catch (e) {
+    // Not an admin, or the token expired — back to the gate rather than an
+    // empty table that looks like nobody exists.
+    token = ""; sessionStorage.removeItem(KEY);
+    $("panel").classList.add("hidden");
+    $("gate").classList.remove("hidden");
+    msg("gate-msg", e.message, "err");
+    return;
+  }
+  $("gate").classList.add("hidden");
+  $("panel").classList.remove("hidden");
+
+  const users = data.users || [];
+  $("rows").innerHTML = users.map((u) => {
+    const locked = u.locked_until && u.locked_until * 1000 > Date.now();
+    const state = !u.can_log_in ? '<span class="pill">no password</span>'
+      : locked ? '<span class="pill bad">locked</span>'
+      : u.must_change_password ? '<span class="pill warn">must change</span>'
+      : '<span class="pill ok">active</span>';
+    return `<tr data-uid="${u.id}">
+      <td><b>${esc(u.name || u.email)}</b><small>${esc(u.email)}</small></td>
+      <td>${state}</td>
+      <td>${u.is_admin ? '<span class="pill">admin</span>' : ""}</td>
+      <td><small>${esc(when(u.last_seen_at))}</small></td>
+      <td><div class="acts">
+        ${locked ? '<button class="sm act-unlock">Unlock</button>' : ""}
+        <button class="sm act-reset">Reset password</button>
+        <button class="sm act-activity">Activity</button>
+        ${u.can_log_in ? '<button class="sm act-revoke">Remove access</button>' : ""}
+        <button class="sm danger act-delete">Delete</button>
+      </div></td></tr>`;
+  }).join("");
+
+  $("rows").querySelectorAll("tr").forEach((tr) => {
+    const uid = tr.dataset.uid;
+    const who = tr.querySelector("b").textContent;
+    tr.querySelector(".act-unlock")?.addEventListener("click", () =>
+      act(`/api/admin/users/${uid}/unlock`, `${who} unlocked.`));
+    tr.querySelector(".act-reset")?.addEventListener("click", () =>
+      act(`/api/admin/users/${uid}/reset-password`, "", who));
+    tr.querySelector(".act-revoke")?.addEventListener("click", (e) => {
+      // Two clicks: this ends their sessions and deletes their password.
+      const b = e.currentTarget;
+      if (b.dataset.armed !== "1") {
+        b.dataset.armed = "1"; b.textContent = "Really remove?";
+        setTimeout(() => { b.dataset.armed = ""; b.textContent = "Remove access"; }, 4000);
+        return;
+      }
+      act(`/api/admin/users/${uid}/revoke`, `${who} can no longer sign in.`);
+    });
+    tr.querySelector(".act-activity")?.addEventListener("click", () => showActivity(uid, who));
+    tr.querySelector(".act-delete")?.addEventListener("click", async (e) => {
+      // Two clicks, and the second says exactly what is about to happen: this
+      // removes their agents and one-to-one conversations for good.
+      const b = e.currentTarget;
+      if (b.dataset.armed !== "1") {
+        b.dataset.armed = "1"; b.textContent = "Delete permanently?";
+        setTimeout(() => { b.dataset.armed = ""; b.textContent = "Delete"; }, 4000);
+        return;
+      }
+      msg("list-msg", "Deleting…");
+      try {
+        const res = await api(`/api/admin/users/${uid}`, { method: "DELETE" });
+        msg("list-msg", `${who} deleted — ${res.agents} agent(s) and ${res.dms} `
+            + `direct conversation(s) removed. Group messages were kept.`, "ok");
+        $("activity").classList.add("hidden");
+        await load();
+      } catch (err) {
+        msg("list-msg", err.message, "err");
+      }
+    });
+  });
+}
+
+async function act(path, okText, whoForPassword) {
+  msg("list-msg", "Working…");
+  try {
+    const res = await api(path, { method: "POST" });
+    if (res && res.password) { showPassword(whoForPassword || "They", res.password); msg("list-msg", ""); }
+    else msg("list-msg", okText || "Done.", "ok");
+    await load();
+  } catch (e) {
+    msg("list-msg", e.message, "err");
+  }
+}
+
+function showPassword(who, password) {
+  // Shown once: only a hash is stored, so there is no second chance.
+  $("pwbox").innerHTML = `<b>One-time password for ${esc(who)}</b>
+    <br><code>${esc(password)}</code>
+    <small>Hand this over now — it cannot be shown again, and they must choose
+    their own password at first sign-in.</small>`;
+  $("pwbox").classList.add("show");
+  $("pwbox").scrollIntoView({ block: "nearest" });
+}
+
+$("signin").addEventListener("click", async () => {
+  const email = $("email").value.trim(), password = $("password").value;
+  if (!email || !password) { msg("gate-msg", "Enter your email and password.", "err"); return; }
+  $("signin").disabled = true;
+  msg("gate-msg", "Signing in…");
+  try {
+    const res = await fetch(API + "/api/auth/login", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || "Sign-in failed");
+    token = data.token;
+    sessionStorage.setItem(KEY, token);
+    $("password").value = "";
+    $("whoami").textContent = (data.user && data.user.email) || email;
+    msg("gate-msg", "");
+    await load();
+  } catch (e) {
+    msg("gate-msg", e.message, "err");
+  } finally {
+    $("signin").disabled = false;
+  }
+});
+
+$("password").addEventListener("keydown", (e) => { if (e.key === "Enter") $("signin").click(); });
+
+$("add").addEventListener("click", async () => {
+  const email = $("new-email").value.trim();
+  if (!email.includes("@")) { msg("add-msg", "Enter an email address.", "err"); return; }
+  msg("add-msg", "Creating…");
+  try {
+    const res = await api("/api/admin/users", { method: "POST", body: JSON.stringify({
+      email, name: $("new-name").value.trim(), is_admin: $("new-admin").checked }) });
+    $("new-email").value = ""; $("new-name").value = ""; $("new-admin").checked = false;
+    showPassword((res.user && res.user.name) || email, res.password);
+    msg("add-msg", "");
+    await load();
+  } catch (e) {
+    msg("add-msg", e.message, "err");
+  }
+});
+
+$("signout").addEventListener("click", () => {
+  token = ""; sessionStorage.removeItem(KEY);
+  $("panel").classList.add("hidden");
+  $("gate").classList.remove("hidden");
+  msg("gate-msg", "Signed out.", "ok");
+});
+
+if (token) load();
+</script>
+</body>
+</html>
