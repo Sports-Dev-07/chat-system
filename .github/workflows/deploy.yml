@@ -34,7 +34,7 @@ jobs:
           flake8 talkio/backend --count --select=E9,F63,F7,F82 --show-source --statistics
 
   # ========================================================
-  # Phase 2: Automated Deployment to VPS via SSH
+  # Phase 2: Native OpenSSH Automated Deployment
   # ========================================================
   deploy:
     name: Deploy to Production VPS
@@ -43,43 +43,84 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST || vars.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME || vars.VPS_USERNAME || 'deploy' }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_PORT || vars.VPS_PORT || 22 }}
-          script_stop: true
-          script: |
-            echo "🚀 Starting Production Deployment..."
-            
-            # Navigate to cloned repo in deploy user's home
-            cd ~/Chat-sysytem || cd ~/Autonomus-Agent-bot || cd ~/talkio
+      - name: Deploy via Native SSH
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST || vars.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USERNAME || vars.VPS_USERNAME || 'deploy' }}
+          VPS_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PORT: ${{ secrets.VPS_PORT || vars.VPS_PORT || '22' }}
+        run: |
+          echo "🔍 Checking Deployment Secrets..."
+          
+          # Diagnostic validation with clear error messages
+          if [ -z "$VPS_HOST" ]; then
+            echo "❌ CRITICAL ERROR: VPS_HOST is empty!"
+            echo "👉 Please go to: https://github.com/Sports-Dev-07/chat-system/settings/secrets/actions"
+            echo "👉 Add a Secret named: VPS_HOST with your Hostinger VPS IP."
+            exit 1
+          fi
 
-            # Pull latest changes from main branch
-            echo "📦 Pulling latest commits from GitHub..."
+          if [ -z "$VPS_KEY" ]; then
+            echo "❌ CRITICAL ERROR: VPS_SSH_KEY is empty!"
+            echo "👉 Please go to: https://github.com/Sports-Dev-07/chat-system/settings/secrets/actions"
+            echo "👉 Add a Secret named: VPS_SSH_KEY with your private SSH key."
+            exit 1
+          fi
+
+          echo "✅ Target Host: $VPS_HOST"
+          echo "✅ Target User: $VPS_USER"
+          echo "✅ Target Port: $VPS_PORT"
+
+          # Setup local SSH directory & key on GitHub Actions runner
+          mkdir -p ~/.ssh
+          echo "$VPS_KEY" | tr -d '\r' > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          # Add VPS to known hosts to prevent interactive authenticity prompts
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+
+          echo "🚀 Connecting to VPS via SSH..."
+          ssh -i ~/.ssh/deploy_key -p "$VPS_PORT" -o StrictHostKeyChecking=accept-new "$VPS_USER@$VPS_HOST" << 'EOF'
+            set -e
+            echo "📦 Logged into VPS successfully as $(whoami)!"
+
+            # Locate repository
+            if [ -d "$HOME/chat-system" ]; then
+              cd "$HOME/chat-system"
+            elif [ -d "$HOME/Chat-sysytem" ]; then
+              cd "$HOME/Chat-sysytem"
+            elif [ -d "$HOME/talkio" ]; then
+              cd "$HOME/talkio"
+            else
+              echo "⚠️ Project folder not found in $HOME. Cloning repository..."
+              cd "$HOME"
+              git clone https://github.com/Sports-Dev-07/chat-system.git
+              cd chat-system
+            fi
+
+            echo "📦 Pulling latest commits from main..."
             git fetch --all
             git reset --hard origin/main
 
-            # Enter talkio directory where docker-compose lives
+            # Enter talkio directory
             cd talkio
 
-            # Create default .env if it does not exist yet
+            # Ensure .env exists
             if [ ! -f ".env" ]; then
               echo "⚙️ Creating production .env file..."
               cp .env.example .env
-              # Generate random secure JWT secret
               sed -i "s/JWT_SECRET=change-me-in-production/JWT_SECRET=$(openssl rand -hex 32)/g" .env
               sed -i "s/DEV_MODE=true/DEV_MODE=false/g" .env
             fi
 
-            # Rebuild and restart Docker containers with latest code
-            echo "🐳 Rebuilding and starting Docker containers..."
-            docker compose down --remove-orphans
+            # Deploy containers with Docker Compose
+            echo "🐳 Rebuilding and restarting Docker containers..."
+            docker compose down --remove-orphans || true
             docker compose build --pull
             docker compose up -d
 
-            # Output running container status
-            echo "✅ Deployment complete! Checking container status:"
+            echo "⏳ Checking container status:"
+            sleep 3
             docker compose ps
+            echo "🎉 Deployment successful!"
+          EOF
